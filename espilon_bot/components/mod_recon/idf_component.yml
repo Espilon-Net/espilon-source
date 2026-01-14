@@ -1,0 +1,5 @@
+
+# Decomment this depencies only when camera use
+dependencies:
+  espressif/esp32-camera:
+    version: "*"

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Multi Flux Caméras UDP</title>
+    <style>
+        img {
+            max-width: 300px;
+            margin: 10px;
+            border: 2px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Caméras en direct</h1>
+    <div id="camera-container">
+        {% for img in image_files %}
+            <div>
+                <p>{{ img }}</p>
+                <img id="img_{{ loop.index }}" src="/streams/{{ img }}?t={{ loop.index }}" alt="Camera {{ loop.index }}">
+                <p>{{ image.split('_')[0] if '_' in image else image }}</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function refreshImages() {
+            const imgs = document.querySelectorAll("img");
+            imgs.forEach((img, i) => {
+                const src = img.src.split("?")[0];
+                img.src = `${src}?t=${Date.now()}`; // Cache-busting
+            });
+        }
+        setInterval(refreshImages, 100);  // Rafraîchit toutes les 100 ms
+    </script>
+    <a href="/trilateration">→ Voir Trilatération</a>
+</body>
+</html>

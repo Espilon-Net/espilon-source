@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Carte de Trilatération</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #canvas {
+            border: 1px solid #333;
+            background-color: #f9f9f9;
+        }
+        #controls {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Carte de Trilatération</h1>
+
+    <p><strong>Dernier point :</strong>
+        {% if point %}
+            ({{ "%.3f"|format(point[0]) }}, {{ "%.3f"|format(point[1]) }})
+        {% else %}
+            Aucun point
+        {% endif %}
+    </p>
+
+    <div id="controls">
+        <label for="gridSize">Taille du plan (L x L) :</label>
+        <input type="number" id="gridSize" value="10" min="5" max="50">
+        <button onclick="redraw()">Appliquer</button>
+    </div>
+
+    <canvas id="canvas" width="600" height="600"></canvas>
+
+    <script>
+        const originalPoint = {{ point|tojson }};
+        const anchors = {{ anchors|tojson }};
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        const width = canvas.width;
+        const height = canvas.height;
+        const scale = 50;
+        let gridSize = parseInt(document.getElementById("gridSize").value);
+
+        const espColors = {
+            "esp1": "green",
+            "esp2": "blue",
+            "esp3": "gold"
+        };
+
+        function toCanvasCoord(x, y) {
+            return [x * scale, height - y * scale];
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = "#ddd";
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= gridSize; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * scale, 0);
+                ctx.lineTo(i * scale, height);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(0, i * scale);
+                ctx.lineTo(width, i * scale);
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = "#888";
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.moveTo(0, height);
+            ctx.lineTo(width, height);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, height);
+            ctx.stroke();
+
+            ctx.fillStyle = "#000";
+            ctx.font = "10px sans-serif";
+            for (let i = 0; i <= gridSize; i++) {
+                ctx.fillText(i, i * scale + 2, height - 5);
+                ctx.fillText(i, 2, height - i * scale - 2);
+            }
+        }
+
+        function drawPoint(x, y, color, label) {
+            const [px, py] = toCanvasCoord(x, y);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(px, py, 6, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            if (label) {
+                ctx.font = "12px sans-serif";
+                ctx.fillStyle = "black";  // ✅ ID toujours en noir
+                ctx.fillText(label, px + 8, py - 8);
+            }
+        }
+
+        function drawCircle(x, y, radius, color = 'rgba(0,0,255,0.1)') {
+            const [px, py] = toCanvasCoord(x, y);
+            ctx.beginPath();
+            ctx.arc(px, py, radius * scale, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.stroke();
+        }
+
+        function redraw() {
+            gridSize = parseInt(document.getElementById("gridSize").value);
+            ctx.clearRect(0, 0, width, height);
+            drawGrid();
+            drawAxes();
+
+            if (anchors) {
+                for (const [id, coords] of Object.entries(anchors)) {
+                    const [x, y, r] = coords;
+                    const baseColor = espColors[id] || 'gray';
+                    const circleColor = baseColor === 'gold' ? 'rgba(255, 215, 0, 0.1)' :
+                                        baseColor === 'green' ? 'rgba(0, 128, 0, 0.1)' :
+                                        baseColor === 'blue' ? 'rgba(0, 0, 255, 0.1)' :
+                                        'rgba(128,128,128,0.1)';
+
+                    if (r) drawCircle(x, y, r, circleColor);
+                    drawPoint(x, y, baseColor, id);  // ID en noir
+                }
+            }
+
+            if (originalPoint) {
+                const [x, y] = originalPoint;
+                drawCircle(x, y, 0.5, 'rgba(255,0,0,0.2)');  // Cercle d'incertitude
+                drawPoint(x, y, "red", "TARGET");
+            }
+        }
+
+        redraw();
+    </script>
+</body>
+</html>

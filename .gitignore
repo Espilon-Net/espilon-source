@@ -1,0 +1,103 @@
+# ESP-IDF Build System
+espilon_bot/build/
+espilon_bot/sdkconfig
+espilon_bot/sdkconfig.old
+espilon_bot/.config
+espilon_bot/.config.old
+
+# Managed Components (downloaded dependencies)
+espilon_bot/managed_components/
+espilon_bot/dependencies.lock
+
+# Firmware binaries
+espilon_bot/firmware/
+*.bin
+*.elf
+*.map
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+env/
+ENV/
+.venv
+
+# Tools - Python dependencies
+tools/c2/__pycache__/
+tools/c3po/__pycache__/
+tools/flasher/__pycache__/
+*.pyc
+
+# Configuration files with secrets
+tools/flasher/devices.json
+tools/flasher/devices.*.json
+tools/c2/config.json
+tools/c3po/config.json
+**/config.local.json
+
+# Logs
+*.log
+logs/
+espilon_bot/logs/
+
+# IDE and Editor
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.DS_Store
+*.bak
+
+# Credentials and Secrets
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+credentials/
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Documentation build
+docs/_build/
+docs/.doctrees/
+site/
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# nanoPB generated files (if you want to regenerate them)
+# Uncomment if you want to track generated .pb.c/.pb.h files
+# espilon_bot/components/core/nanoPB/*.pb.c
+# espilon_bot/components/core/nanoPB/*.pb.h
+
+# Backup files
+*.backup
+*_backup
+
+# Hardware-specific configs (optional)
+# Uncomment if you don't want to track these
+# espilon_bot/partitions.csv

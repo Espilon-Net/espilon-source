@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package c2;
+
+/* ============================
+ * C2 → ESP
+ * ============================ */
+
+message Command {
+  string device_id     = 1;
+  string command_name  = 2;
+  repeated string argv = 3;
+  string request_id    = 4;
+}
+
+/* ============================
+ * ESP → C2
+ * ============================ */
+
+enum AgentMsgType {
+  AGENT_INFO        = 0;
+  AGENT_ERROR       = 1;
+  AGENT_DATA        = 2;
+  AGENT_LOG         = 3;
+  AGENT_CMD_RESULT  = 4;
+}
+
+message AgentMessage {
+  string device_id  = 1;
+  AgentMsgType type = 2;
+
+  string source     = 3;
+  string request_id = 4;
+
+  bytes payload     = 5;
+
+  bool eof          = 6;
+}

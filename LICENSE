@@ -1,0 +1,61 @@
+MIT License
+
+Copyright (c) 2025 Epsilon Project Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+ADDITIONAL TERMS FOR SECURITY RESEARCH TOOLS
+
+This software is a security research and educational tool. By using this
+software, you agree to the following additional terms:
+
+1. AUTHORIZED USE ONLY: This software must only be used for authorized
+   security testing, research, education, or other lawful purposes. You must
+   have explicit permission to test any systems, networks, or devices that
+   you do not own.
+
+2. NO MALICIOUS USE: You may not use this software for any malicious,
+   harmful, or illegal activities, including but not limited to: unauthorized
+   access to systems, denial of service attacks, privacy violations, or any
+   activity that violates local, state, national, or international laws.
+
+3. USER RESPONSIBILITY: You are solely responsible for your use of this
+   software and any consequences thereof. The authors and contributors
+   assume no liability for misuse, damages, or legal issues arising from
+   the use of this software.
+
+4. NO WARRANTY: This software is provided for research and educational
+   purposes. It comes with no warranty and the authors make no guarantees
+   about its fitness for any particular purpose.
+
+5. COMPLIANCE: You must comply with all applicable laws and regulations
+   in your jurisdiction, including but not limited to: computer fraud and
+   abuse laws, wiretapping laws, privacy laws, and telecommunications
+   regulations.
+
+6. ATTRIBUTION: When publishing research or educational materials based
+   on this software, please provide appropriate attribution to the original
+   authors and this project.
+
+Unauthorized use of this software may violate applicable laws and could
+result in severe civil and criminal penalties.
+
+USE AT YOUR OWN RISK.
