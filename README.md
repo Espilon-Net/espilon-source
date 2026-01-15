@@ -12,7 +12,7 @@
 
 ## Documentation Complète
 
-**[Consultez la documentation complète ici](https://github.com/yourusername/espilon-docs)**
+**[Consultez la documentation complète ici](https://docs.espilon.net)**
 
 La documentation MkDocs inclut :
 
@@ -290,13 +290,13 @@ Espilon doit être utilisé uniquement pour :
 ### V2.0 (En cours)
 
 - [ ] Mesh networking (BLE/WiFi)
+- [ ] Améliorer la Documentations
 - [ ] OTA updates
 - [ ] Multilatération collaborative
 - [ ] Optimisation mémoire
 
 ### Future
 
-- [ ] Améliorer la Documentations **(en cours)**
 - [ ] PCB custom Espilon
 - [ ] Support ESP32-S3/C3
 - [ ] Module SDK pour extensions tierces
@@ -311,6 +311,7 @@ Espilon est sous licence **MIT** avec addendum de sécurité.
 Voir [LICENSE](LICENSE) pour les détails complets.
 
 **En résumé** :
+
 - Utilisation libre pour recherche, éducation, développement
 - Modification et distribution autorisées
 - **Obtenir autorisation** avant tout déploiement
@@ -340,7 +341,7 @@ Contributions bienvenues ! Voir [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Liens Utiles
 
-- **[Documentation complète](https://github.com/Espilon-Net/espilon-docs)**
+- **[Documentation complète](https://docs.espilon.net)**
 - **[ESP-IDF Documentation](https://docs.espressif.com/projects/esp-idf/)**
 - **[LilyGO T-Call](https://github.com/Xinyuan-LilyGO/LilyGO-T-Call-SIM800)**
 - **English README** : [README.en.md](README.en.md)

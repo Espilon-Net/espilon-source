@@ -1,487 +1,359 @@
 # Espilon
 
-**Espilon** is an embedded agent framework for ESP32 microcontrollers, designed for network surveillance, reconnaissance, and distributed communication in constrained IoT environments. Developed in C with **ESP-IDF**, Espilon demonstrates how to build lightweight, efficient implants capable of communicating via Wi-Fi or GPRS.
+**Embedded ESP32 Agent Framework for Security Research and IoT**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![ESP-IDF](https://img.shields.io/badge/ESP--IDF-v5.3.2-green.svg)](https://github.com/espressif/esp-idf)
 [![Platform](https://img.shields.io/badge/Platform-ESP32-red.svg)](https://www.espressif.com/en/products/socs/esp32)
 
-> **IMPORTANT:** This is a security research and educational tool. It must only be used in authorized penetration testing, controlled environments, CTF competitions, or educational contexts. Unauthorized use against systems you don't own or have explicit permission to test is illegal.
+> **IMPORTANT**: Espilon is intended for security research, authorized penetration testing, and education. Unauthorized use is illegal. Always obtain written permission before any deployment.
 
 ---
 
-## Table of Contents
+## Full Documentation
 
-- [Overview](#overview)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Getting Started](#getting-started)
-- [Modules](#modules)
-- [C2 Server](#c2-server)
-- [Configuration](#configuration)
-- [Hardware Requirements](#hardware-requirements)
-- [Security](#security)
-- [Documentation](#documentation)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [Authors](#authors)
-- [License](#license)
+**[View the full documentation here](https://docs.espilon.net)**
+
+The MkDocs documentation includes:
+
+- Step-by-step installation guide
+- WiFi and GPRS configuration
+- Module and command reference
+- Multi-device flasher guide
+- C2 protocol specification
+- Examples and use cases
 
 ---
 
-## Overview
+## Quick Start
 
-Initially presented as a PoC at **Le Hack (June 2025)**, Espilon has evolved into a **modular codebase** that enables:
+### Prerequisites
 
-- Understanding embedded agent construction
-- Manipulating ESP32's low-level network stack
-- Developing specialized modules (sniffer, proxy, reconnaissance, vision)
-- Studying IoT communication scenarios in cybersecurity research contexts
+- ESP-IDF v5.3.2
+- Python 3.8+
+- ESP32 (any compatible model)
+- LilyGO T-Call for GPRS mode (optional)
 
-The framework is **compatible with all ESP32 variants** supported by ESP-IDF and offers two network modes:
+### Quick Installation
 
-- **Wi-Fi** (802.11 b/g/n)
-- **GPRS** (SIM800/808 modules)
+```bash
+# 1. Install ESP-IDF v5.3.2
+mkdir -p ~/esp
+cd ~/esp
+git clone -b v5.3.2 --recursive https://github.com/espressif/esp-idf.git
+cd esp-idf
+./install.sh esp32
+. ./export.sh
+
+# 2. Clone Espilon
+cd ~
+git clone https://github.com/yourusername/epsilon.git
+cd epsilon/espilon_bot
+
+# 3. Configure
+idf.py menuconfig
+
+# 4. Build and flash
+idf.py build
+idf.py -p /dev/ttyUSB0 flash monitor
+```
+
+**Minimal configuration** (menuconfig):
+```
+Espilon Bot Configuration
+  |- Device ID: "your_unique_id"
+  |- Network -> WiFi
+  |   |- SSID: "YourWiFi"
+  |   |- Password: "YourPassword"
+  |- Server
+      |- IP: "192.168.1.100"
+      |- Port: 2626
+```
 
 ---
 
-## Features
+## What is Espilon?
 
-### Core Capabilities
+Espilon transforms affordable ESP32 microcontrollers (~$5) into powerful networked agents for:
 
-- **Dual Network Backend**: WiFi or GPRS connectivity
-- **Encrypted C2 Communication**: ChaCha20 encryption with Protocol Buffers serialization
-- **Modular Architecture**: Enable/disable components at compile time
-- **Async Command Execution**: FreeRTOS-based task management
-- **Auto-reconnection**: Persistent TCP connection with automatic recovery
-- **Multi-device Support**: Centralized C2 can manage multiple agents simultaneously
+- **Security research**: WiFi testing, network reconnaissance, IoT pentesting
+- **Education**: Learning embedded systems, network protocols, FreeRTOS
+- **IoT prototyping**: Distributed communication, monitoring, sensors
 
-### Network Tools
+### Connectivity Modes
 
-- **ARP Scanner**: Local network discovery
-- **Custom ICMP Ping**: Network reachability testing
-- **TCP Reverse Proxy**: Traffic forwarding and tunneling
-- **802.11 Packet Sniffer**: Monitor mode packet capture
-- **Network Traffic Generation**: Controlled testing scenarios
-
-### Wireless Manipulation
-
-- **Fake Access Point**: Rogue AP with WPA2 support
-- **Captive Portal**: DNS hijacking with customizable landing page
-- **AP+STA Concurrent Mode**: NAPT routing implementation
-- **Client Session Tracking**: Monitor connected devices
-
-### Reconnaissance
-
-- **ESP32-CAM Support**: Image capture and UDP streaming
-- **BLE Trilateration**: Position estimation using RSSI (WIP)
-- **Network Discovery**: Automated reconnaissance capabilities
+| Mode | Hardware | Range | Use Case |
+|------|----------|-------|----------|
+| **WiFi** | Standard ESP32 | 50-100m | Labs, buildings |
+| **GPRS** | LilyGO T-Call | National (2G) | Mobile, remote |
 
 ---
 
 ## Architecture
 
-Espilon is built on a **unified core** with an **ESP-IDF component system** activated at compile time.
-
 ```
-┌─────────────────────────────────────────────────┐
-│                  ESP32 Agent                    │
-├─────────────────────────────────────────────────┤
-│  Modules: Network | FakeAP | Recon | System    │
-├─────────────────────────────────────────────────┤
-│         Command Registry & Dispatcher           │
-├─────────────────────────────────────────────────┤
-│    Core: WiFi/GPRS | Crypto | Protobuf | COM   │
-├─────────────────────────────────────────────────┤
-│         LWIP Stack | FreeRTOS | ESP-IDF         │
-└─────────────────────────────────────────────────┘
-                       │
-                  TCP (encrypted)
-                       │
-┌─────────────────────────────────────────────────┐
-│              C2 Server (Python)                 │
-├─────────────────────────────────────────────────┤
-│   CLI | Device Registry | Group Management     │
-├─────────────────────────────────────────────────┤
-│    Transport | Crypto | Protobuf | Commands    │
-└─────────────────────────────────────────────────┘
++---------------------------------------------------------+
+|                     ESP32 Agent                         |
+|  +-----------+  +----------+  +---------------------+   |
+|  |  WiFi/    |->| ChaCha20 |->|   C2 Protocol       |   |
+|  |  GPRS     |<-|  Crypto  |<-|  (nanoPB/TCP)       |   |
+|  +-----------+  +----------+  +---------------------+   |
+|         |              |                 |              |
+|  +-----------------------------------------------------+|
+|  |           Module System (FreeRTOS)                  ||
+|  |  [Network] [FakeAP] [Recon] [Custom...]             ||
+|  +-----------------------------------------------------+|
++---------------------------------------------------------+
+                        | Encrypted TCP
+              +---------------------+
+              |   C2 Server (C3PO)  |
+              |  - Device Registry  |
+              |  - Group Management |
+              |  - CLI Interface    |
+              +---------------------+
 ```
 
-### Core Components
+### Key Components
 
-The core provides:
-
-- **Network Backend**: WiFi or GPRS (configured via `menuconfig`)
-- **Persistent TCP/IP**: Connection management with auto-reconnection
-- **Encryption**: ChaCha20 stream cipher
-- **Serialization**: nanoPB (Protocol Buffers for embedded systems)
-- **Command Parser**: Dispatches commands to registered handlers
-- **FreeRTOS Tasks**: Dedicated tasks for connection, processing, and crypto
-- **State Management**: Connection state tracking and recovery
-
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed information.
+- **Core**: Network connection, ChaCha20 crypto, nanoPB protocol
+- **Modules**: Extensible system (Network, FakeAP, Recon, etc.)
+- **C2 (C3PO)**: Python asyncio server for multi-agent control
+- **Flasher**: Automated multi-device flashing tool
 
 ---
 
-## Getting Started
+## Available Modules
 
-### Prerequisites
+> **Important note**: Modules are **mutually exclusive**. You must choose **only one module** during configuration via menuconfig.
 
-- **ESP-IDF v5.3.2** (or compatible version)
-- Python 3.8+ (for C2 server and tools)
-- ESP32 development board
-- USB-to-Serial adapter (if not integrated)
+### System Module (Built-in, always active)
 
-### Quick Start
+Basic system commands:
 
-1. **Clone the repository**
-
-```bash
-git clone https://github.com/yourusername/epsilon.git
-cd epsilon
-```
-
-2. **Set up ESP-IDF environment**
-
-```bash
-. $HOME/esp-idf/export.sh
-```
-
-3. **Configure the firmware**
-
-```bash
-cd espilon_bot
-idf.py menuconfig
-```
-
-Navigate to `Espilon Configuration` and set:
-- Network backend (WiFi/GPRS)
-- C2 server IP and port
-- Crypto keys (**CHANGE DEFAULT KEYS**)
-- Module selection
-
-4. **Build and flash**
-
-```bash
-idf.py build
-idf.py -p /dev/ttyUSB0 flash
-idf.py monitor
-```
-
-5. **Start the C2 server**
-
-```bash
-cd tools/c2
-python3 c3po.py --port 2626
-```
-
-For detailed installation instructions, see [INSTALL.md](docs/INSTALL.md).
-
----
-
-## Modules
-
-Espilon uses a modular architecture where each module is an isolated ESP-IDF component.
-
-### System Module
-
-Basic device management:
-- `system_reboot` - Reboot the device
-- `system_mem` - Memory usage statistics
-- `system_uptime` - Device uptime
+- `system_reboot`: Reboot the ESP32
+- `system_mem`: Display memory usage (heap free, heap min, internal free)
+- `system_uptime`: Uptime since boot
 
 ### Network Module
 
-Advanced network capabilities:
-- `ping` - ICMP ping with custom parameters
-- `arp_scan` - Discover devices on local network
-- `proxy_start/stop` - TCP reverse proxy
-- `dos_tcp` - Controlled traffic generation (testing only)
+Module for network reconnaissance and testing:
+
+- `ping <host> [args...]`: ICMP connectivity test
+- `arp_scan`: Discover hosts on local network via ARP
+- `proxy_start <ip> <port>`: Start a TCP proxy
+- `proxy_stop`: Stop the running proxy
+- `dos_tcp <ip> <port> <count>`: TCP load test (authorized use only)
 
 ### FakeAP Module
 
-Wireless manipulation (authorized testing only):
-- `fakeap_start` - Create rogue access point
-- `portal_start` - Launch captive portal with DNS hijacking
-- `sniffer_start` - 802.11 packet capture
-- `fakeap_stop` - Cleanup and restore
+Module for creating simulated WiFi access points:
+
+- `fakeap_start <ssid> [open|wpa2] [password]`: Start a fake access point
+- `fakeap_stop`: Stop the fake AP
+- `fakeap_status`: Display status (AP, portal, sniffer, clients)
+- `fakeap_clients`: List connected clients
+- `fakeap_portal_start`: Enable captive portal
+- `fakeap_portal_stop`: Disable captive portal
+- `fakeap_sniffer_on`: Enable network traffic capture
+- `fakeap_sniffer_off`: Disable capture
 
 ### Recon Module
 
-Reconnaissance capabilities:
-- `capture` - ESP32-CAM snapshot (JPEG)
-- `stream_start/stop` - UDP video streaming
-- `trilat_scan` - BLE device discovery (WIP)
+Reconnaissance and data collection module. Two modes available:
 
-See [MODULES.md](docs/MODULES.md) for complete API documentation.
+#### Camera Mode (ESP32-CAM)
+
+- `cam_start <ip> <port>`: Start UDP video streaming (~7 FPS, QQVGA)
+- `cam_stop`: Stop streaming
+
+#### BLE Trilateration Mode
+
+- `trilat start <mac> <url> <bearer>`: Start BLE trilateration with HTTP POST
+- `trilat stop`: Stop trilateration
 
 ---
 
-## 🎮 C2 Server
+**Configuration**: `idf.py menuconfig` -> Espilon Bot Configuration -> Modules
 
-Espilon includes a custom C2 server (`c3po`) specifically designed for ESP32 constraints.
+Choose **only one module**:
 
-### Features
+- `CONFIG_MODULE_NETWORK`: Enable the Network Module
+- `CONFIG_MODULE_FAKEAP`: Enable the FakeAP Module
+- `CONFIG_MODULE_RECON`: Enable the Recon Module
+  - Then choose: `Camera` or `BLE Trilateration`
 
-- **Device Registry**: Track connected agents by unique ID
-- **Group Management**: Organize devices into logical groups
-- **Command Targeting**: Send commands to individuals, groups, or all
-- **Interactive CLI**: Tab completion and help system
-- **Encrypted Protocol**: ChaCha20 + Protocol Buffers
-- **Plugin System**: Extensible command architecture
+---
 
-### Usage
+## Tools
+
+### Multi-Device Flasher
+
+Automated flasher to configure multiple ESP32s:
 
 ```bash
-# Start server
-python3 tools/c2/c3po.py --port 2626
-
-# List connected devices
-c3po> list
-
-# Send command to device
-c3po> send ce4f626b system_mem
-
-# Send to all devices
-c3po> send all system_uptime
-
-# Create group
-c3po> group add lab ce4f626b a91dd021
-
-# Send to group
-c3po> send group lab system_reboot
+cd tools/flasher
+python3 flash.py --config devices.json
 ```
 
-See [tools/c2/README.md](tools/c2/README.md) for detailed C2 documentation.
+**devices.json**:
 
----
-
-## Configuration
-
-Configuration is done via ESP-IDF's `menuconfig` system.
-
-### Key Settings
-
-```
-Espilon Configuration
-├── Device ID                    # Unique identifier (CRC32)
-├── Network Backend Selection
-│   ├── WiFi                     # SSID, password, STA/AP modes
-│   └── GPRS                     # APN, SIM800 config
-├── C2 Server
-│   ├── IP Address               # Server IP
-│   └── Port                     # Server port (default: 2626)
-├── Cryptography
-│   ├── ChaCha20 Key             # 32-byte encryption key
-│   └── Nonce                    # 12-byte nonce
-└── Modules
-    ├── Enable Network Module
-    ├── Enable FakeAP Module
-    └── Enable Recon Module
-        ├── Camera Mode
-        └── BLE Trilateration
+```json
+{
+  "project": "/path/to/espilon_bot",
+  "devices": [
+    {
+      "device_id": "esp001",
+      "port": "/dev/ttyUSB0",
+      "network_mode": "wifi",
+      "wifi_ssid": "MyNetwork",
+      "wifi_pass": "MyPassword",
+      "srv_ip": "192.168.1.100"
+    }
+  ]
+}
 ```
 
-### Security Configuration
+See [tools/flasher/README.md](tools/flasher/README.md) for complete documentation.
 
-**CRITICAL**: Change default crypto keys before deployment!
+### C2 Server (C3PO)
 
-Default keys are for testing only:
-- Default Key: `testde32chars0000000000000000000`
-- Default Nonce: `noncenonceno`
+Command & Control server:
 
-Generate secure keys:
 ```bash
-# Generate 32-byte key
-openssl rand -hex 32
-
-# Generate 12-byte nonce
-openssl rand -hex 12
+cd tools/c2
+pip3 install -r requirements.txt
+python3 c3po.py --port 2626
 ```
 
-See [SECURITY.md](docs/SECURITY.md) for security best practices.
+**Commands**:
 
----
-
-## Hardware Requirements
-
-### Minimum Requirements
-
-- **ESP32** (any variant)
-- **Flash**: 4MB minimum
-- **WiFi**: Integrated 802.11 b/g/n
-
-### For Camera Module
-
-- **ESP32-CAM** (AI-Thinker or compatible)
-- **PSRAM**: Required for image buffering
-- **Camera**: OV2640 or compatible
-
-### For GPRS Mode
-
-- **ESP32 DevKit** (any variant)
-- **SIM800/SIM808** module
-- **UART**: GPIO 26 (RX), 27 (TX)
-- **Power Management**: GPIOs 4, 23, 5
-
-See [HARDWARE.md](docs/HARDWARE.md) for detailed pinouts and wiring diagrams.
+- `list`: List connected agents
+- `select <id>`: Select an agent
+- `cmd <command>`: Execute a command
+- `group`: Manage agent groups
 
 ---
 
 ## Security
 
+### Encryption
+
+- **ChaCha20** for C2 communications
+- **Configurable keys** via menuconfig
+- **Protocol Buffers (nanoPB)** for serialization
+
+**CHANGE DEFAULT KEYS** for production use:
+
+```bash
+# Generate random keys
+openssl rand -hex 32  # ChaCha20 key (32 bytes)
+openssl rand -hex 12  # Nonce (12 bytes)
+```
+
 ### Responsible Use
 
-This tool is designed for:
-- Authorized penetration testing
-- Controlled security research
-- Educational purposes
-- CTF competitions
-- IoT security assessments (with permission)
+Espilon should only be used for:
 
-**NEVER** use for:
-- Unauthorized network access
-- Malicious attacks
-- Privacy violations
-- Illegal activities
+- **Authorized** penetration testing
+- **Ethical** security research
+- Education and training
+- Legitimate IoT prototyping
 
-### Security Considerations
-
-**Current Implementation:**
-- ChaCha20 stream cipher (256-bit key)
-- Protocol Buffers serialization
-- Implicit authentication via encryption
-
-**Known Limitations:**
-- Static nonce (should be unique per message)
-- No authenticated encryption (no MAC/Poly1305)
-- Hardcoded default credentials
-- No forward secrecy
-- No device enrollment/revocation
-
-**Recommendations:**
-- Use ChaCha20-Poly1305 AEAD
-- Implement unique nonce per message
-- Add device certificate system
-- Use TLS/DTLS for transport security
-
-See [SECURITY.md](docs/SECURITY.md) for complete security documentation.
+**Prohibited**: Unauthorized access, malicious attacks, privacy violations.
 
 ---
 
-## Documentation
+## Use Cases
 
-- [Installation Guide](docs/INSTALL.md) - Detailed setup instructions
-- [Architecture Overview](docs/ARCHITECTURE.md) - System design and components
-- [Module API](docs/MODULES.md) - Complete module documentation
-- [Protocol Specification](docs/PROTOCOL.md) - C2 communication protocol
-- [Hardware Guide](docs/HARDWARE.md) - Pinouts and wiring diagrams
-- [Security Best Practices](docs/SECURITY.md) - Security guidelines
-- [Development Guide](docs/DEVELOPMENT.md) - Creating custom modules
-- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
+### WiFi Pentesting
+
+- Network security auditing
+- WPA2/WPA3 robustness testing
+- Network mapping
+
+### IoT Security Research
+
+- IoT device testing
+- Protocol analysis
+- Vulnerability detection
+
+### Education
+
+- Cybersecurity labs
+- Embedded systems courses
+- CTF competitions
 
 ---
 
 ## Roadmap
 
-### Short-term
+### V2.0 (In Progress)
 
-- [ ] Complete GPRS RX implementation
-- [ ] BLE trilateration module completion
-- [ ] SOCKS5 proxy support
-- [ ] Enhanced multi-flasher tool
-- [ ] Persistent C2 storage (groups, history)
-- [ ] Request/response correlation tracking
-
-### Long-term
-
-#### Mesh IoT Network
-
-- [ ] Bot-to-bot communication
-- [ ] Distributed routing protocols
-- [ ] OTA firmware updates
-- [ ] Extended range via relay
+- [ ] Mesh networking (BLE/WiFi)
+- [ ] Improve documentation
+- [ ] OTA updates
 - [ ] Collaborative multilateration
-- [ ] Zero-trust mesh architecture
-
-#### Custom PCB
-
-- [ ] Portable design with battery management
-- [ ] Integrated antennas (WiFi, GPRS, BLE)
-- [ ] Embedded sensors (temperature, motion, etc.)
-- [ ] File system storage (SD card)
-- [ ] MPU/MCU architecture
-- [ ] Blue team & Red team variants
-
-#### Code Improvements
-
 - [ ] Memory optimization
-- [ ] Module standardization
-- [ ] Enhanced C2 protocols
-- [ ] Unit testing framework
-- [ ] CI/CD pipeline
-- [ ] Docker development environment
 
----
+### Future
 
-## Contributing
-
-Contributions are welcome! This project is now open source to benefit the security research and IoT communities.
-
-### How to Contribute
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Guidelines
-
-- Follow the existing code style
-- Add tests for new features
-- Update documentation
-- Ensure security best practices
-- Only submit authorized security research
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
----
-
-## Authors
-
-- **@Eun0us** - Main developer, firmware architecture
-- **@off-path** - C2 development lead
-- **@itsoktocryyy** - Contributor
-- **@wepfen** - Contributor
+- [ ] Custom Espilon PCB
+- [ ] ESP32-S3/C3 support
+- [ ] Module SDK for third-party extensions
+- [ ] Web UI for C2
 
 ---
 
 ## License
 
-[To be determined - Please add appropriate license]
+Espilon is licensed under **MIT** with a security addendum.
 
-**Recommended licenses for security tools:**
-- **MIT License** - Permissive, allows commercial use
-- **Apache 2.0** - Permissive with patent protection
-- **GPL v3** - Copyleft, modifications must be open source
+See [LICENSE](LICENSE) for full details.
 
----
-
-## Acknowledgments
-
-- ESP-IDF team at Espressif
-- Le Hack conference for initial presentation
-- Security research community
-- All contributors and testers
+**In summary**:
+- Free use for research, education, development
+- Modification and distribution allowed
+- **Obtain authorization** before any deployment
+- Malicious use strictly prohibited
 
 ---
 
-## Contact
+## Contributors
 
-- GitHub Issues: [Report bugs or request features](https://github.com/yourusername/epsilon/issues)
-- Discussions: [Community discussions](https://github.com/yourusername/epsilon/discussions)
+- **@Eun0us** - Core architecture, modules
+- **@off-path** - C2 server, protocol
+- **@itsoktocryyy** - Network features, work on Mod Wall Hack
+- **@wepfen** - Documentation, tools
+
+### Contributing
+
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+**Join us**:
+
+- Report bugs
+- Propose features
+- Submit PRs
+- Improve documentation
 
 ---
 
-**Legal Disclaimer**: This tool is provided for educational and authorized testing purposes only. Users are solely responsible for ensuring their use complies with applicable laws and regulations. The authors assume no liability for misuse or damage caused by this software.
+## Useful Links
+
+- **[Full documentation](https://docs.espilon.net)**
+- **[ESP-IDF Documentation](https://docs.espressif.com/projects/esp-idf/)**
+- **[LilyGO T-Call](https://github.com/Xinyuan-LilyGO/LilyGO-T-Call-SIM800)**
+- **French README**: [README.md](README.md)
+
+---
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/Espilon-Net/Espilon-Source/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Espilon-Net/Espilon-Source/discussions)
+
+---
+
+**Originally presented at Le Hack (June 2025)**
+
+**Made with love for security research and education**
