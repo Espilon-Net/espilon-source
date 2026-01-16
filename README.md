@@ -1,5 +1,7 @@
 # Espilon
 
+![Espilon Logo](assets/images/espilon-logo.jpg)
+
 **Framework d'agents embarqués ESP32 pour la recherche en sécurité et l'IoT**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -14,14 +16,21 @@
 
 **[Consultez la documentation complète ici](https://docs.espilon.net)**
 
+![Documentation header](assets/images/documentation-header.png)
+
+---
+
 La documentation MkDocs inclut :
 
+```md
 - Guide d'installation pas à pas
+- Traduction EN/FR
 - Configuration WiFi et GPRS
 - Référence des modules et commandes
 - Guide du flasher multi-device
 - Spécification du protocole C2
 - Exemples et cas d'usage
+```
 
 ---
 
@@ -59,7 +68,8 @@ idf.py -p /dev/ttyUSB0 flash monitor
 ```
 
 **Configuration minimale** (menuconfig) :
-```
+
+```c
 Espilon Bot Configuration
   ├─ Device ID: "votre_id_unique"
   ├─ Network → WiFi
@@ -74,7 +84,7 @@ Espilon Bot Configuration
 
 ## Qu'est-ce qu'Espilon ?
 
-Espilon transforme des microcontrôleurs ESP32 abordables (~5€) en agents networked puissants pour :
+Espilon transforme des microcontrôleurs ESP32 abordables à **~5€** en agents networked puissants pour :
 
 - **Recherche en sécurité** : Tests WiFi, reconnaissance réseau, IoT pentesting
 - **Éducation** : Apprentissage de l'embarqué, protocoles réseau, FreeRTOS
@@ -86,6 +96,8 @@ Espilon transforme des microcontrôleurs ESP32 abordables (~5€) en agents netw
 |------|----------|--------|----------|
 | **WiFi** | ESP32 standard | 50-100m | Labs, bâtiments |
 | **GPRS** | LilyGO T-Call | National (2G) | Mobile, remote |
+
+**General Packet Radio Service** vs **WiFi**
 
 ---
 

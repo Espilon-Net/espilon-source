@@ -1,5 +1,7 @@
 # Espilon
 
+![Espilon Logo](assets/images/espilon-logo.jpg)
+
 **Embedded ESP32 Agent Framework for Security Research and IoT**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -14,14 +16,21 @@
 
 **[View the full documentation here](https://docs.espilon.net)**
 
+![Documentation header](assets/images/documentation-header.png)
+
+---
+
 The MkDocs documentation includes:
 
+```md
 - Step-by-step installation guide
+- Translate EN/FR
 - WiFi and GPRS configuration
 - Module and command reference
 - Multi-device flasher guide
 - C2 protocol specification
 - Examples and use cases
+```
 
 ---
 
@@ -59,7 +68,8 @@ idf.py -p /dev/ttyUSB0 flash monitor
 ```
 
 **Minimal configuration** (menuconfig):
-```
+
+```c
 Espilon Bot Configuration
   |- Device ID: "your_unique_id"
   |- Network -> WiFi
@@ -69,6 +79,8 @@ Espilon Bot Configuration
       |- IP: "192.168.1.100"
       |- Port: 2626
 ```
+
+![menuconfig](assets/images/menuconfig.png)
 
 ---
 
