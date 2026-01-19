@@ -4,28 +4,91 @@ on:
   push:
     branches:
       - "**"
+  workflow_dispatch:
 
 jobs:
   notify:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
     steps:
-      - name: Send Discord notification
+      - name: Post to Discord (embed)
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ secrets.WEBHOOK_URL }}
+          EVENT_JSON: ${{ toJson(github.event) }}
         run: |
-          COMMITS_JSON='${{ toJson(github.event.commits) }}'
-          COMMITS=$(echo "$COMMITS_JSON" | jq -r '.[:10][] | "• [\(.id[0:7])] \(.message) — \(.author.name)"' || true)
+          node - <<'NODE'
+          const event = JSON.parse(process.env.EVENT_JSON);
+          const webhook = process.env.DISCORD_WEBHOOK;
 
-          REPO="${{ github.repository }}"
-          BRANCH="${{ github.ref_name }}"
-          COMPARE_URL="${{ github.event.compare }}"
-          ACTOR="${{ github.actor }}"
+          if (!webhook) {
+            console.error("❌ Secret WEBHOOK_URL manquant. (Repo Settings > Secrets and variables > Actions)");
+            process.exit(1);
+          }
 
-          if [ -z "$COMMITS" ]; then
-            COMMITS="• (Pas de détails de commits disponibles)"
-          fi
+          const repoName = event.repository?.full_name || "unknown/repo";
+          const repoUrl = event.repository?.html_url || "";
+          const branch = (event.ref || "").replace("refs/heads/", "");
+          const compareUrl = event.compare || repoUrl;
+          const pusher = event.pusher?.name || event.sender?.login || "someone";
 
-          CONTENT="**📌 Push sur \`$REPO\`** (branche: \`$BRANCH\`) par **$ACTOR**\n$COMMITS\n\n🔎 $COMPARE_URL"
+          const commits = (event.commits || []).slice(0, 10).map(c => {
+            const sha = (c.id || "").slice(0, 7);
+            const msg = (c.message || "").split("\n")[0];
+            const author = c.author?.name || "unknown";
+            const url = c.url
+              ? c.url.replace("api.github.com/repos", "github.com").replace("/commits/", "/commit/")
+              : "";
+            return { sha, msg, author, url };
+          });
 
-          jq -n --arg content "$CONTENT" '{content: $content}' \
-            | curl -s -H "Content-Type: application/json" -X POST -d @- "$DISCORD_WEBHOOK"
+          const description = commits.length
+            ? commits.map(c => `• **[${c.sha}](${c.url})** ${c.msg} — _${c.author}_`).join("\n")
+            : "• (Pas de détails de commits fournis par l'événement)";
+
+          // Discord embed limits: description max ~4096 chars
+          const safeDescription = description.length > 3900
+            ? description.slice(0, 3900) + "\n…"
+            : description;
+
+          const payload = {
+            content: null,
+            embeds: [
+              {
+                title: `📌 Push sur ${repoName}`,
+                url: compareUrl,
+                description: safeDescription,
+                color: 0x7289DA,
+                author: {
+                  name: pusher,
+                  url: `https://github.com/${event.sender?.login || ""}`
+                },
+                fields: [
+                  { name: "Branche", value: `\`${branch || "?"}\``, inline: true },
+                  { name: "Commits", value: `${event.commits?.length ?? commits.length}`, inline: true }
+                ],
+                footer: { text: "GitHub Actions → Discord" },
+                timestamp: new Date().toISOString()
+              }
+            ]
+          };
+
+          fetch(webhook, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          })
+          .then(async (res) => {
+            const txt = await res.text();
+            if (!res.ok) {
+              console.error(`❌ Discord error ${res.status}: ${txt}`);
+              process.exit(1);
+            }
+            console.log("✅ Notification envoyée sur Discord.");
+          })
+          .catch((err) => {
+            console.error("❌ Fetch error:", err);
+            process.exit(1);
+          });
+          NODE
