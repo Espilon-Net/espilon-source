@@ -115,7 +115,7 @@ menu "Security"
 
 config CRYPTO_KEY
     string "ChaCha20 Key (32 bytes)"
-    default "testde32chars00000000000000000000"
+    default "testde32chars0000000000000000000"
 
 config CRYPTO_NONCE
     string "ChaCha20 Nonce (12 bytes)"

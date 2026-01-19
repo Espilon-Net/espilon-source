@@ -46,6 +46,7 @@ tools/c3po/config.json
 *.log
 logs/
 espilon_bot/logs/
+sdkconfig
 
 # IDE and Editor
 .vscode/

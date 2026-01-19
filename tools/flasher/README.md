@@ -42,6 +42,7 @@ The `devices.json` file contains:
 {
   "project": "/home/user/epsilon/espilon_bot",
   "devices": [
+    ## WiFi AGENT ##
     {
       "device_id": "ce4f626b",
       "port": "/dev/ttyUSB0",
@@ -59,6 +60,7 @@ The `devices.json` file contains:
       "crypto_key": "testde32chars00000000000000000000",
       "crypto_nonce": "noncenonceno"
     },
+    ## GPRS AGENT ##
     {
       "device_id": "a91dd021",
       "port": "/dev/ttyUSB1",

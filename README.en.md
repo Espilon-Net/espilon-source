@@ -56,10 +56,10 @@ cd esp-idf
 
 # 2. Clone Espilon
 cd ~
-git clone https://github.com/yourusername/epsilon.git
-cd epsilon/espilon_bot
+git clone https://github.com/Espilon-Net/epsilon-source.git
+cd Espilon-Net/espilon_bot
 
-# 3. Configure
+# 3. Configure with menuconfig or tools/flasher/devices.json
 idf.py menuconfig
 
 # 4. Build and flash

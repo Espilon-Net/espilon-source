@@ -56,7 +56,7 @@ cd esp-idf
 
 # 2. Cloner Espilon
 cd ~
-git clone https://github.com/yourusername/epsilon.git
+git clone https://github.com/Espilon-Net/epsilon-source.git
 cd epsilon/espilon_bot
 
 # 3. Configurer
@@ -103,26 +103,26 @@ Espilon transforme des microcontrôleurs ESP32 abordables à **~5€** en agents
 
 ## Architecture
 
-```
+```md
 ┌─────────────────────────────────────────────────────┐
 │                   ESP32 Agent                       │
-│  ┌───────────┐  ┌──────────┐  ┌─────────────────┐ │
-│  │  WiFi/    │→ │ ChaCha20 │→ │   C2 Protocol   │ │
-│  │  GPRS     │← │  Crypto  │← │  (nanoPB/TCP)   │ │
-│  └───────────┘  └──────────┘  └─────────────────┘ │
+│  ┌───────────┐  ┌──────────┐  ┌─────────────────┐   │
+│  │  WiFi/    │→ │ ChaCha20 │→ │   C2 Protocol   │   │
+│  │  GPRS     │← │  Crypto  │← │  (nanoPB/TCP)   │   │
+│  └───────────┘  └──────────┘  └─────────────────┘   │
 │         ↓              ↓                 ↓          │
-│  ┌───────────────────────────────────────────────┐ │
-│  │         Module System (FreeRTOS)              │ │
-│  │  [Network] [FakeAP] [Recon] [Custom...]       │ │
-│  └───────────────────────────────────────────────┘ │
+│  ┌───────────────────────────────────────────────┐  │
+│  │         Module System (FreeRTOS)              │  │
+│  │  [Network] [FakeAP] [Recon] [Custom...]       │  │
+│  └───────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────┘
                         ↕ Encrypted TCP
-              ┌─────────────────────┐
-              │   C2 Server (C3PO)  │
-              │  - Device Registry  │
-              │  - Group Management │
-              │  - CLI Interface    │
-              └─────────────────────┘
+              ┌──────────────────────┐
+              │   C2 Server (C3PO)   │
+              │  - Device Registry   │
+              │  - Group Management  │
+              │  - CLI Interface     │
+              └──────────────────────┘
 ```
 
 ### Composants Clés
@@ -130,6 +130,7 @@ Espilon transforme des microcontrôleurs ESP32 abordables à **~5€** en agents
 - **Core** : Connexion réseau, crypto ChaCha20, protocole nanoPB
 - **Modules** : Système extensible (Network, FakeAP, Recon, etc.)
 - **C2 (C3PO)** : Serveur Python asyncio pour contrôle multi-agents
+- **C3PO**: Ancien c2 (serveur web - Trilateration + Front affichage caméra)
 - **Flasher** : Outil de flash multi-device automatisé
 
 ---
@@ -211,15 +212,39 @@ python3 flash.py --config devices.json
 
 ```json
 {
-  "project": "/path/to/espilon_bot",
+  "project": "/home/user/epsilon/espilon_bot",
   "devices": [
+    ## WiFi AGENT ##
     {
-      "device_id": "esp001",
+      "device_id": "ce4f626b",
       "port": "/dev/ttyUSB0",
+      "srv_ip": "192.168.1.13",
+      "srv_port": 2626,
       "network_mode": "wifi",
-      "wifi_ssid": "MyNetwork",
-      "wifi_pass": "MyPassword",
-      "srv_ip": "192.168.1.100"
+      "wifi_ssid": "MyWiFi",
+      "wifi_pass": "MyPassword123",
+      "hostname": "pixel-8-pro",
+      "module_network": true,
+      "module_recon": false,
+      "module_fakeap": false,
+      "recon_camera": false,
+      "recon_ble_trilat": false,
+      "crypto_key": "testde32chars00000000000000000000",
+      "crypto_nonce": "noncenonceno"
+    },
+
+    ## GPRS AGENT ##
+    {
+      "device_id": "a91dd021",
+      "port": "/dev/ttyUSB1",
+      "srv_ip": "203.0.113.10",
+      "srv_port": 2626,
+      "network_mode": "gprs",
+      "gprs_apn": "sl2sfr",
+      "hostname": "galaxy-s24-ultra",
+      "module_network": true,
+      "module_recon": false,
+      "module_fakeap": false
     }
   ]
 }
@@ -302,7 +327,8 @@ Espilon doit être utilisé uniquement pour :
 ### V2.0 (En cours)
 
 - [ ] Mesh networking (BLE/WiFi)
-- [ ] Améliorer la Documentations
+- [ ] Implémenter Module reccoon dans C3PO
+- [ ] Améliorer la Documentations [here](https://docs.espilon.net)
 - [ ] OTA updates
 - [ ] Multilatération collaborative
 - [ ] Optimisation mémoire
@@ -335,7 +361,7 @@ Voir [LICENSE](LICENSE) pour les détails complets.
 
 - **@Eun0us** - Core architecture, modules
 - **@off-path** - C2 server, protocol
-- **@itsoktocryyy** - Network features
+- **@itsoktocryyy** - Network features, Wall Hack
 - **@wepfen** - Documentation, tools
 
 ### Contribuer
