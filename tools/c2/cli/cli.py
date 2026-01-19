@@ -1,11 +1,13 @@
 import readline
 import os
 import time
+from typing import Optional
 
 from utils.display import Display
 from cli.help import HelpManager
 from core.transport import Transport
 from proto.c2_pb2 import Command
+from camera import CameraServer
 
 DEV_MODE = True
 
@@ -17,7 +19,10 @@ class CLI:
         self.groups = groups
         self.transport = transport
         self.help_manager = HelpManager(commands, DEV_MODE)
-        self.active_commands = {} # {request_id: {"device_id": ..., "command_name": ..., "start_time": ..., "status": "running"}}
+        self.active_commands = {}  # {request_id: {"device_id": ..., "command_name": ..., "start_time": ..., "status": "running"}}
+
+        # Camera server instance
+        self.camera_server: Optional[CameraServer] = None
 
         readline.parse_and_bind("tab: complete")
         readline.set_completer(self._complete)
@@ -31,7 +36,7 @@ class CLI:
         options = []
 
         if len(parts) == 1:
-            options = ["send", "list", "group", "help", "clear", "exit", "active_commands"]
+            options = ["send", "list", "group", "help", "clear", "exit", "active_commands", "camera"]
 
         elif parts[0] == "send":
             if len(parts) == 2:  # Completing target (device ID, 'all', 'group')
@@ -41,6 +46,10 @@ class CLI:
             elif (len(parts) == 3 and parts[1] != "group") or (len(parts) == 4 and parts[1] == "group"):  # Completing command name
                 options = self.commands.list()
             # Add more logic here if commands have arguments that can be tab-completed
+
+        elif parts[0] == "camera":
+            if len(parts) == 2:
+                options = ["start", "stop", "status"]
 
         elif parts[0] == "group":
             if len(parts) == 2:  # Completing group action
@@ -93,9 +102,13 @@ class CLI:
             if action == "send":
                 self._handle_send(parts)
                 continue
-            
+
             if action == "active_commands":
                 self._handle_active_commands()
+                continue
+
+            if action == "camera":
+                self._handle_camera(parts[1:])
                 continue
 
             Display.error("Unknown command")
@@ -287,3 +300,58 @@ class CLI:
                 cmd_info["status"],
                 elapsed_time
             ])
+
+    def _handle_camera(self, parts):
+        if not parts:
+            Display.error("Usage: camera <start|stop|status>")
+            return
+
+        cmd = parts[0]
+
+        if cmd == "start":
+            if self.camera_server and self.camera_server.is_running:
+                Display.system_message("Camera server is already running.")
+                return
+
+            self.camera_server = CameraServer()
+            result = self.camera_server.start()
+
+            if result["udp"]["started"]:
+                Display.system_message(f"UDP receiver started on {result['udp']['host']}:{result['udp']['port']}")
+            else:
+                Display.error("UDP receiver failed to start (already running?)")
+
+            if result["web"]["started"]:
+                Display.system_message(f"Web server started at {result['web']['url']}")
+            else:
+                Display.error("Web server failed to start (already running?)")
+
+        elif cmd == "stop":
+            if not self.camera_server:
+                Display.system_message("Camera server is not running.")
+                return
+
+            self.camera_server.stop()
+            Display.system_message("Camera server stopped.")
+            self.camera_server = None
+
+        elif cmd == "status":
+            if not self.camera_server:
+                Display.system_message("Camera server is not running.")
+                return
+
+            status = self.camera_server.get_status()
+
+            Display.system_message("Camera Server Status:")
+            Display.system_message(f"  UDP Receiver: {'Running' if status['udp']['running'] else 'Stopped'}")
+            if status['udp']['running']:
+                Display.system_message(f"    - Host: {status['udp']['host']}:{status['udp']['port']}")
+                Display.system_message(f"    - Frames received: {status['udp']['frames_received']}")
+                Display.system_message(f"    - Active cameras: {status['udp']['active_cameras']}")
+
+            Display.system_message(f"  Web Server: {'Running' if status['web']['running'] else 'Stopped'}")
+            if status['web']['running']:
+                Display.system_message(f"    - URL: {status['web']['url']}")
+
+        else:
+            Display.error("Invalid camera command. Use: start, stop, status")

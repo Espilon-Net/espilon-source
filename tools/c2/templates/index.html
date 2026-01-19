@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cameras - ESPILON</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+        }
+
+        header {
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #8b949e;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #3fb950;
+            border-radius: 50%;
+        }
+
+        .logout {
+            color: #8b949e;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .logout:hover {
+            color: #c9d1d9;
+        }
+
+        main {
+            padding: 24px;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 14px;
+            color: #8b949e;
+        }
+
+        .title span {
+            color: #c9d1d9;
+            font-weight: 500;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 10px 14px;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .card-header .name {
+            font-family: monospace;
+            color: #c9d1d9;
+        }
+
+        .card-header .badge {
+            font-size: 11px;
+            color: #3fb950;
+            background: #3fb95026;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        .card-body {
+            background: #010409;
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-body img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 80px 20px;
+            color: #8b949e;
+        }
+
+        .empty h2 {
+            font-size: 16px;
+            font-weight: 500;
+            color: #c9d1d9;
+            margin-bottom: 8px;
+        }
+
+        .empty p {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">ESPILON</div>
+        <div class="header-right">
+            <div class="status">
+                <div class="status-dot"></div>
+                <span id="camera-count">{{ image_files|length }}</span> camera(s)
+            </div>
+            <a href="/logout" class="logout">Logout</a>
+        </div>
+    </header>
+
+    <main>
+        <div class="toolbar">
+            <div class="title">Cameras <span>Live Feed</span></div>
+        </div>
+
+        {% if image_files %}
+        <div class="grid" id="grid">
+            {% for img in image_files %}
+            <div class="card">
+                <div class="card-header">
+                    <span class="name">{{ img.replace('.jpg', '').replace('_', ':') }}</span>
+                    <span class="badge">LIVE</span>
+                </div>
+                <div class="card-body">
+                    <img src="/streams/{{ img }}?t=0" data-src="/streams/{{ img }}">
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty">
+            <h2>No active cameras</h2>
+            <p>Waiting for ESP devices to send frames on UDP port 5000</p>
+        </div>
+        {% endif %}
+    </main>
+
+    <script>
+        function refresh() {
+            const t = Date.now();
+            document.querySelectorAll('.card-body img').forEach(img => {
+                img.src = img.dataset.src + '?t=' + t;
+            });
+        }
+
+        async function checkCameras() {
+            try {
+                const res = await fetch('/api/cameras');
+                const data = await res.json();
+                const current = document.querySelectorAll('.card').length;
+                document.getElementById('camera-count').textContent = data.cameras.length;
+                if (data.cameras.length !== current) location.reload();
+            } catch (e) {}
+        }
+
+        setInterval(refresh, 100);
+        setInterval(checkCameras, 5000);
+    </script>
+</body>
+</html>
