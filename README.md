@@ -137,9 +137,7 @@ Espilon transforme des microcontrôleurs ESP32 abordables à **~5€** en agents
 
 ## Modules Disponibles
 
-> **Note importante** : Les modules sont **mutuellement exclusifs**. Vous devez choisir **un seul module** lors de la configuration via menuconfig.
-
-### System Module (Built-in, toujours actif)
+### System Module (Built-in, toujours actif désactivable dans les src)
 
 Commandes système de base :
 

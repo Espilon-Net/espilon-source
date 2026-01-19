@@ -1,0 +1,31 @@
+name: Discord - Commits
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          COMMITS_JSON='${{ toJson(github.event.commits) }}'
+          COMMITS=$(echo "$COMMITS_JSON" | jq -r '.[:10][] | "• [\(.id[0:7])] \(.message) — \(.author.name)"' || true)
+
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.ref_name }}"
+          COMPARE_URL="${{ github.event.compare }}"
+          ACTOR="${{ github.actor }}"
+
+          if [ -z "$COMMITS" ]; then
+            COMMITS="• (Pas de détails de commits disponibles)"
+          fi
+
+          CONTENT="**📌 Push sur \`$REPO\`** (branche: \`$BRANCH\`) par **$ACTOR**\n$COMMITS\n\n🔎 $COMPARE_URL"
+
+          jq -n --arg content "$CONTENT" '{content: $content}' \
+            | curl -s -H "Content-Type: application/json" -X POST -d @- "$DISCORD_WEBHOOK"
