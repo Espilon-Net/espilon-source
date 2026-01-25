@@ -1,7 +1,7 @@
 from core.crypto import CryptoContext
 from core.device import Device
 from core.registry import DeviceRegistry
-from logs.manager import LogManager
+from logging.manager import LogManager
 from utils.display import Display
 
 from proto.c2_pb2 import Command, AgentMessage, AgentMsgType
