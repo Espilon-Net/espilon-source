@@ -3,13 +3,6 @@ import socket
 import threading
 import re
 import sys
-import time # Added missing import
-
-#!/usr/bin/env python3
-import socket
-import threading
-import re
-import sys
 
 from core.registry import DeviceRegistry
 from core.transport import Transport

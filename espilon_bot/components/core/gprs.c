@@ -13,7 +13,6 @@
 
 #include "utils.h"      /* CONFIG_*, base64, crypto */
 #include "command.h"    /* process_command */
-#include "crypto.h"     /* c2_decode_and_exec */
 
 #ifdef CONFIG_NETWORK_GPRS
 

@@ -6,6 +6,8 @@
 
 ```md
 
+- Add requierements.txt
+
 - Implementer la coexistence entre multiflasher fichier (valid-id.txt - separator "\n" - C2 will only authorize device who are register in 'valid-id.txt' or add c2 command style 'authorizeId <id>' and he will be add into id list & valid-id.txt file)
 
 
