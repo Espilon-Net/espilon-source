@@ -12,6 +12,19 @@
 #include "command.h"
 #include "cmd_system.h"
 
+/* Module headers */
+#ifdef CONFIG_MODULE_NETWORK
+#include "cmd_network.h"
+#endif
+
+#ifdef CONFIG_MODULE_FAKEAP
+#include "cmd_fakeAP.h"
+#endif
+
+#ifdef CONFIG_MODULE_RECON
+#include "cmd_recon.h"
+#endif
+
 static const char *TAG = "MAIN";
 
 static void init_nvs(void)
@@ -39,20 +52,25 @@ void app_main(void)
     command_async_init();          // Async worker (Core 1)
     mod_system_register_commands();
 
+    /* Register enabled modules */
 #ifdef CONFIG_MODULE_NETWORK
-#include "cmd_network.h"
     mod_network_register_commands();
+    ESP_LOGI(TAG, "Network module loaded");
+#endif
 
-#elif defined(CONFIG_MODULE_FAKEAP)
-#include "cmd_fakeAP.h"
+#ifdef CONFIG_MODULE_FAKEAP
     mod_fakeap_register_commands();
+    ESP_LOGI(TAG, "FakeAP module loaded");
+#endif
 
-#elif defined(CONFIG_MODULE_RECON)
-#include "cmd_recon.h"
+#ifdef CONFIG_MODULE_RECON
     #ifdef CONFIG_RECON_MODE_CAMERA
     mod_camera_register_commands();
-    #elif defined(CONFIG_RECON_MODE_BLE_TRILAT)
+    ESP_LOGI(TAG, "Camera module loaded");
+    #endif
+    #ifdef CONFIG_RECON_MODE_BLE_TRILAT
     mod_ble_trilat_register_commands();
+    ESP_LOGI(TAG, "BLE Trilateration module loaded");
     #endif
 #endif
 

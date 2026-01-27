@@ -313,7 +313,7 @@ class CLI:
                 Display.system_message("Camera server is already running.")
                 return
 
-            self.camera_server = CameraServer()
+            self.camera_server = CameraServer(device_registry=self.registry)
             result = self.camera_server.start()
 
             if result["udp"]["started"]:

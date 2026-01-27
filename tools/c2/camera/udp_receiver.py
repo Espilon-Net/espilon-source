@@ -1,17 +1,64 @@
-"""UDP server for receiving camera frames from ESP devices."""
+"""UDP server for receiving camera frames from ESP devices.
+
+Protocol from ESP32:
+- TOKEN + "START" -> Start of new frame
+- TOKEN + chunk    -> JPEG data chunk
+- TOKEN + "END"   -> End of frame, decode and process
+"""
 
 import os
 import socket
 import threading
+import time
 import cv2
 import numpy as np
-from typing import Optional, Callable
+from typing import Optional, Callable, Dict
 
 from .config import (
     UDP_HOST, UDP_PORT, UDP_BUFFER_SIZE,
     SECRET_TOKEN, IMAGE_DIR,
     VIDEO_ENABLED, VIDEO_PATH, VIDEO_FPS, VIDEO_CODEC
 )
+
+
+class FrameAssembler:
+    """Assembles JPEG frames from multiple UDP packets."""
+
+    def __init__(self, timeout: float = 5.0):
+        self.timeout = timeout
+        self.buffer = bytearray()
+        self.start_time: Optional[float] = None
+        self.receiving = False
+
+    def start_frame(self):
+        """Start receiving a new frame."""
+        self.buffer = bytearray()
+        self.start_time = time.time()
+        self.receiving = True
+
+    def add_chunk(self, data: bytes) -> bool:
+        """Add a chunk to the frame buffer. Returns False if timed out."""
+        if not self.receiving:
+            return False
+        if self.start_time and (time.time() - self.start_time) > self.timeout:
+            self.reset()
+            return False
+        self.buffer.extend(data)
+        return True
+
+    def finish_frame(self) -> Optional[bytes]:
+        """Finish frame assembly and return complete data."""
+        if not self.receiving or len(self.buffer) == 0:
+            return None
+        data = bytes(self.buffer)
+        self.reset()
+        return data
+
+    def reset(self):
+        """Reset the assembler state."""
+        self.buffer = bytearray()
+        self.start_time = None
+        self.receiving = False
 
 
 class UDPReceiver:
@@ -31,6 +78,9 @@ class UDPReceiver:
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
 
+        # Frame assemblers per source address
+        self._assemblers: Dict[str, FrameAssembler] = {}
+
         # Video recording
         self._video_writer: Optional[cv2.VideoWriter] = None
         self._video_size: Optional[tuple] = None
@@ -39,6 +89,7 @@ class UDPReceiver:
         self.frames_received = 0
         self.invalid_tokens = 0
         self.decode_errors = 0
+        self.packets_received = 0
 
         # Active cameras tracking
         self._active_cameras: dict = {}  # {camera_id: last_frame_time}
@@ -83,7 +134,9 @@ class UDPReceiver:
         self._cleanup_frames()
 
         self._active_cameras.clear()
+        self._assemblers.clear()
         self.frames_received = 0
+        self.packets_received = 0
 
     def _cleanup_frames(self):
         """Remove all .jpg files from image directory."""
@@ -94,12 +147,21 @@ class UDPReceiver:
         except Exception:
             pass
 
+    def _get_assembler(self, addr: tuple) -> FrameAssembler:
+        """Get or create a frame assembler for the given address."""
+        key = f"{addr[0]}:{addr[1]}"
+        if key not in self._assemblers:
+            self._assemblers[key] = FrameAssembler()
+        return self._assemblers[key]
+
     def _receive_loop(self):
-        """Main UDP receive loop."""
+        """Main UDP receive loop with START/END protocol handling."""
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._sock.bind((self.host, self.port))
         self._sock.settimeout(1.0)
+
+        print(f"[UDP] Receiver started on {self.host}:{self.port}")
 
         while not self._stop_event.is_set():
             try:
@@ -109,34 +171,38 @@ class UDPReceiver:
             except OSError:
                 break
 
+            self.packets_received += 1
+
             # Validate token
             if not data.startswith(SECRET_TOKEN):
                 self.invalid_tokens += 1
                 continue
 
             # Remove token prefix
-            frame_data = data[len(SECRET_TOKEN):]
-
-            # Decode JPEG
-            frame = self._decode_frame(frame_data)
-            if frame is None:
-                self.decode_errors += 1
-                continue
-
-            self.frames_received += 1
+            payload = data[len(SECRET_TOKEN):]
+            assembler = self._get_assembler(addr)
             camera_id = f"{addr[0]}_{addr[1]}"
-            self._active_cameras[camera_id] = True
 
-            # Save frame
-            self._save_frame(camera_id, frame)
-
-            # Record video if enabled
-            if VIDEO_ENABLED:
-                self._record_frame(frame)
-
-            # Callback
-            if self.on_frame:
-                self.on_frame(camera_id, frame, addr)
+            # Handle protocol markers
+            if payload == b"START":
+                assembler.start_frame()
+                continue
+            elif payload == b"END":
+                frame_data = assembler.finish_frame()
+                if frame_data:
+                    self._process_complete_frame(camera_id, frame_data, addr)
+                continue
+            else:
+                # Regular data chunk
+                if not assembler.receiving:
+                    # No START received, try as single-packet frame (legacy)
+                    frame = self._decode_frame(payload)
+                    if frame is not None:
+                        self._process_frame(camera_id, frame, addr)
+                    else:
+                        self.decode_errors += 1
+                else:
+                    assembler.add_chunk(payload)
 
         # Cleanup
         if self._sock:
@@ -146,6 +212,32 @@ class UDPReceiver:
         if self._video_writer:
             self._video_writer.release()
             self._video_writer = None
+
+        print("[UDP] Receiver stopped")
+
+    def _process_complete_frame(self, camera_id: str, frame_data: bytes, addr: tuple):
+        """Process a fully assembled frame."""
+        frame = self._decode_frame(frame_data)
+        if frame is None:
+            self.decode_errors += 1
+            return
+        self._process_frame(camera_id, frame, addr)
+
+    def _process_frame(self, camera_id: str, frame: np.ndarray, addr: tuple):
+        """Process a decoded frame."""
+        self.frames_received += 1
+        self._active_cameras[camera_id] = time.time()
+
+        # Save frame
+        self._save_frame(camera_id, frame)
+
+        # Record video if enabled
+        if VIDEO_ENABLED:
+            self._record_frame(frame)
+
+        # Callback
+        if self.on_frame:
+            self.on_frame(camera_id, frame, addr)
 
     def _decode_frame(self, data: bytes) -> Optional[np.ndarray]:
         """Decode JPEG data to OpenCV frame."""
@@ -181,6 +273,7 @@ class UDPReceiver:
         """Return receiver statistics."""
         return {
             "running": self.is_running,
+            "packets_received": self.packets_received,
             "frames_received": self.frames_received,
             "invalid_tokens": self.invalid_tokens,
             "decode_errors": self.decode_errors,

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Multilateration - ESPILON{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">Multilateration <span>BLE Positioning</span></div>
+</div>
+
+<div class="trilat-container">
+    <div class="trilat-canvas-wrapper">
+        <canvas id="trilat-canvas"></canvas>
+    </div>
+
+    <div class="trilat-sidebar">
+        <!-- Target Position -->
+        <div class="trilat-panel">
+            <h3>Target Position</h3>
+            <div class="trilat-stat">
+                <span class="label">X</span>
+                <span class="value" id="target-x">-</span>
+            </div>
+            <div class="trilat-stat">
+                <span class="label">Y</span>
+                <span class="value" id="target-y">-</span>
+            </div>
+            <div class="trilat-stat">
+                <span class="label">Confidence</span>
+                <span class="value" id="target-confidence">-</span>
+            </div>
+            <div class="trilat-stat">
+                <span class="label">Last Update</span>
+                <span class="value" id="target-age">-</span>
+            </div>
+        </div>
+
+        <!-- Active Scanners -->
+        <div class="trilat-panel">
+            <h3>Active Scanners (<span id="scanner-count">0</span>)</h3>
+            <div class="scanner-list" id="scanner-list">
+                <div class="empty" style="padding: 20px;">
+                    <p>No scanners active</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration -->
+        <div class="trilat-panel">
+            <h3>Configuration</h3>
+            <div class="config-row">
+                <label>RSSI at 1m</label>
+                <input type="number" id="config-rssi" value="-40" step="1">
+            </div>
+            <div class="config-row">
+                <label>Path Loss (n)</label>
+                <input type="number" id="config-n" value="2.5" step="0.1">
+            </div>
+            <div class="config-row">
+                <label>Smoothing</label>
+                <input type="number" id="config-smooth" value="5" min="1" max="20">
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 8px;">
+                <button class="btn btn-primary" onclick="saveConfig()">Save</button>
+                <button class="btn btn-secondary" onclick="clearData()">Clear</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/multilateration.js') }}"></script>
+{% endblock %}

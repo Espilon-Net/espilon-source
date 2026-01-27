@@ -60,3 +60,6 @@ VIDEO_ENABLED = _get_bool("VIDEO_ENABLED", True)
 VIDEO_PATH = os.getenv("VIDEO_PATH", "static/streams/record.avi")
 VIDEO_FPS = _get_int("VIDEO_FPS", 10)
 VIDEO_CODEC = os.getenv("VIDEO_CODEC", "MJPG")
+
+# Multilateration
+MULTILAT_AUTH_TOKEN = os.getenv("MULTILAT_AUTH_TOKEN", "multilat_secret_token")

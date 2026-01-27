@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ESPILON{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="logo">ESPILON</div>
+        <nav class="main-nav">
+            <a href="/dashboard" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+                Dashboard
+            </a>
+            <a href="/cameras" class="nav-link {% if active_page == 'cameras' %}active{% endif %}">
+                Cameras
+            </a>
+            <a href="/multilateration" class="nav-link {% if active_page == 'multilateration' %}active{% endif %}">
+                Multilateration
+            </a>
+        </nav>
+        <div class="header-right">
+            <div class="status">
+                <div class="status-dot"></div>
+                <span id="device-count">-</span> device(s)
+            </div>
+            <a href="/logout" class="logout">Logout</a>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        // Update device count in header
+        async function updateStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('device-count').textContent = data.connected_devices || 0;
+            } catch (e) {}
+        }
+
+        updateStats();
+        setInterval(updateStats, 10000);
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

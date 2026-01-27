@@ -13,7 +13,7 @@ import sys
 
 from core.registry import DeviceRegistry
 from core.transport import Transport
-from logs.manager import LogManager
+from log.manager import LogManager
 from cli.cli import CLI
 from commands.registry import CommandRegistry
 from commands.reboot import RebootCommand
@@ -25,7 +25,7 @@ from utils.display import Display # Import Display utility
 BASE64_RE = re.compile(br'^[A-Za-z0-9+/=]+$')
 
 RX_BUF_SIZE = 4096
-DEVICE_TIMEOUT_SECONDS = 60 # Devices are considered inactive after 60 seconds without a heartbeat
+DEVICE_TIMEOUT_SECONDS = 300  # Devices are considered inactive after 5 minutes without a heartbeat
 HEARTBEAT_CHECK_INTERVAL = 10 # Check every 10 seconds
 
 

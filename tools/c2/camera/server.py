@@ -1,17 +1,21 @@
-"""Main camera server combining UDP receiver and web server."""
+"""Main camera server combining UDP receiver and unified web server."""
 
 from typing import Optional, Callable
 
-from .config import UDP_HOST, UDP_PORT, WEB_HOST, WEB_PORT, IMAGE_DIR, DEFAULT_USERNAME, DEFAULT_PASSWORD
+from .config import (
+    UDP_HOST, UDP_PORT, WEB_HOST, WEB_PORT, IMAGE_DIR,
+    DEFAULT_USERNAME, DEFAULT_PASSWORD, FLASK_SECRET_KEY, MULTILAT_AUTH_TOKEN
+)
 from .udp_receiver import UDPReceiver
-from .web_server import WebServer
+from web.server import UnifiedWebServer
+from web.multilateration import MultilaterationEngine
 
 
 class CameraServer:
     """
     Combined camera server that manages both:
     - UDP receiver for incoming camera frames from ESP devices
-    - Web server for viewing the camera streams
+    - Unified web server for dashboard, cameras, and trilateration
     """
 
     def __init__(self,
@@ -22,6 +26,7 @@ class CameraServer:
                  image_dir: str = IMAGE_DIR,
                  username: str = DEFAULT_USERNAME,
                  password: str = DEFAULT_PASSWORD,
+                 device_registry=None,
                  on_frame: Optional[Callable] = None):
         """
         Initialize the camera server.
@@ -34,8 +39,11 @@ class CameraServer:
             image_dir: Directory to store camera frames
             username: Web interface username
             password: Web interface password
+            device_registry: DeviceRegistry instance for device listing
             on_frame: Optional callback when frame is received (camera_id, frame, addr)
         """
+        self.multilat_engine = MultilaterationEngine()
+
         self.udp_receiver = UDPReceiver(
             host=udp_host,
             port=udp_port,
@@ -43,12 +51,16 @@ class CameraServer:
             on_frame=on_frame
         )
 
-        self.web_server = WebServer(
+        self.web_server = UnifiedWebServer(
             host=web_host,
             port=web_port,
             image_dir=image_dir,
             username=username,
-            password=password
+            password=password,
+            secret_key=FLASK_SECRET_KEY,
+            multilat_token=MULTILAT_AUTH_TOKEN,
+            device_registry=device_registry,
+            multilateration_engine=self.multilat_engine
         )
 
     @property

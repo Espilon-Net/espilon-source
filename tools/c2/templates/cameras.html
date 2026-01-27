@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Cameras - ESPILON{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">Cameras <span>Live Feed</span></div>
+    <div class="status">
+        <div class="status-dot"></div>
+        <span id="camera-count">{{ image_files|length }}</span> camera(s)
+    </div>
+</div>
+
+{% if image_files %}
+<div class="grid grid-cameras" id="grid">
+    {% for img in image_files %}
+    <div class="card">
+        <div class="card-header">
+            <span class="name">{{ img.replace('.jpg', '').replace('_', ':') }}</span>
+            <span class="badge badge-live">LIVE</span>
+        </div>
+        <div class="card-body card-body-image">
+            <img src="/streams/{{ img }}?t=0" data-src="/streams/{{ img }}">
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty">
+    <h2>No active cameras</h2>
+    <p>Waiting for ESP32-CAM devices to send frames on UDP port 5000</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function refresh() {
+        const t = Date.now();
+        document.querySelectorAll('.card-body-image img').forEach(img => {
+            img.src = img.dataset.src + '?t=' + t;
+        });
+    }
+
+    async function checkCameras() {
+        try {
+            const res = await fetch('/api/cameras');
+            const data = await res.json();
+            const current = document.querySelectorAll('.card').length;
+            document.getElementById('camera-count').textContent = data.count || 0;
+            if (data.count !== current) location.reload();
+        } catch (e) {}
+    }
+
+    setInterval(refresh, 100);
+    setInterval(checkCameras, 5000);
+</script>
+{% endblock %}

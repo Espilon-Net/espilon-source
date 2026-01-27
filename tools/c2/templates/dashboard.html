@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - ESPILON{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">Dashboard <span>Connected Devices</span></div>
+</div>
+
+<div id="devices-grid" class="grid">
+    <!-- Devices loaded via JavaScript -->
+</div>
+
+<div id="empty-state" class="empty" style="display: none;">
+    <h2>No devices connected</h2>
+    <p>Waiting for ESP32 agents to connect to the C2 server</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function formatDuration(seconds) {
+        if (seconds < 60) return Math.round(seconds) + 's';
+        if (seconds < 3600) return Math.round(seconds / 60) + 'm';
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.round((seconds % 3600) / 60);
+        return hours + 'h ' + mins + 'm';
+    }
+
+    function createDeviceCard(device) {
+        const statusClass = device.status === 'Connected' ? 'badge-connected' : 'badge-inactive';
+
+        return `
+            <div class="card" data-device-id="${device.id}">
+                <div class="card-header">
+                    <span class="name">${device.id}</span>
+                    <span class="badge ${statusClass}">${device.status}</span>
+                </div>
+                <div class="card-body">
+                    <div class="device-info">
+                        <div class="device-row">
+                            <span class="label">IP Address</span>
+                            <span class="value">${device.ip}:${device.port}</span>
+                        </div>
+                        <div class="device-row">
+                            <span class="label">Connected</span>
+                            <span class="value">${formatDuration(device.connected_for_seconds)}</span>
+                        </div>
+                        <div class="device-row">
+                            <span class="label">Last Seen</span>
+                            <span class="value">${formatDuration(device.last_seen_ago_seconds)} ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async function loadDevices() {
+        try {
+            const res = await fetch('/api/devices');
+            const data = await res.json();
+
+            const grid = document.getElementById('devices-grid');
+            const empty = document.getElementById('empty-state');
+
+            if (data.devices && data.devices.length > 0) {
+                grid.innerHTML = data.devices.map(createDeviceCard).join('');
+                grid.style.display = 'grid';
+                empty.style.display = 'none';
+            } else {
+                grid.style.display = 'none';
+                empty.style.display = 'block';
+            }
+        } catch (e) {
+            console.error('Failed to load devices:', e);
+        }
+    }
+
+    loadDevices();
+    setInterval(loadDevices, 5000);
+</script>
+{% endblock %}
